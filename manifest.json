@@ -1,0 +1,35 @@
+{
+    "manifest_version": 3,
+    "name": "Resume YouTube Subs",
+    "short_name": "res-yt-subs",
+    "description": "On click of the extension icon your YouTube subscriptions will be opened and the extension will scroll to the last watched video.",
+    "homepage_url": "https://github.com/michael-schaller/resume-youtube-subs",
+    "version": "1.0.0",
+
+    "action": {
+        "default_icon": {
+            "16": "icon/icon-16.png",
+            "32": "icon/icon-32.png",
+            "48": "icon/icon-48.png",
+            "128": "icon/icon-128.png"
+        },
+        "default_title": "Click me to resume your YouTube subscriptions."
+    },
+    "icons": {
+        "16": "icon/icon-16.png",
+        "32": "icon/icon-32.png",
+        "48": "icon/icon-48.png",
+        "128": "icon/icon-128.png"
+    }
+
+    // TODO:
+    // * Add background:
+    //   https://developer.chrome.com/docs/extensions/mv3/manifest/background/
+    // * Add content_script:
+    //   https://developer.chrome.com/docs/extensions/mv3/manifest/content_scripts/
+    // * Add permissions:
+    //   https://developer.chrome.com/docs/extensions/mv3/declare_permissions/
+    //   https://developer.chrome.com/docs/extensions/reference/permissions/
+    // * Add key:
+    //   https://developer.chrome.com/docs/extensions/mv3/manifest/key/
+}
