@@ -21,6 +21,4 @@
 
 ## Low Priority (P3)
 
-* Add a `Report Issue` link to the context menu of the extension.
-
 * Check every file in the project for remaining TODOs before removing this file.

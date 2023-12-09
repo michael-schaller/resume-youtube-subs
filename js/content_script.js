@@ -88,19 +88,16 @@ async function scrollToWatchedVideo(node) {
 	parent.scrollIntoView({block: "end", inline: "start", behavior: "instant"});
     var offset = 100; // Scroll a bit more to show the rest of the video tile. Particularly important for grid view.
     window.scrollBy({left: 0, top: offset, behavior: "instant"});
-    console.log("scrolled to video:", document.documentElement.scrollTop, parent);
 
     // Undo scroll if we scrolled down.
     // The mutations sent by the MutationObserver can be out of order.
     // By not allowing to scroll down anymore we should end up with the newest watched video.
     var newPos = document.documentElement.scrollTop;
     if (newPos > oldPos) {
-        console.log(`undid scroll from ${oldPos} to ${newPos}`);
         window.scrollTo({left: 0, top: oldPos, behavior: "instant"});
     }
 }
 
 function scrollToEndOfPage() {
-    console.log("scrolled to end of page");
     window.scrollTo({left: 0, top: document.scrollingElement.scrollHeight, behavior: "instant"});
 }
