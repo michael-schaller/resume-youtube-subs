@@ -6,8 +6,11 @@
 ## High Priority (P2)
 
 * Add `RELEASE.md` that explains step by step how to do a new release. This should include:
+  * Check code/files for remaining TODOs for anything that should be fixed.
   * Update extension version in the manifest.
   * Testing the extension multiple times in grid view and list view.
+  * Create zip file without .git directory.
+  * Upload at https://chrome.google.com/webstore/devconsole.
 
 * Publish the extension in the Chrome Web Store:
   https://developer.chrome.com/docs/webstore/publish/
