@@ -6,30 +6,32 @@ async function handleActionOnClicked() {
     console.log("Extension icon clicked.");
 
     // Create YouTube subscriptions tab and wait for tab completion.
-    let tab = await chrome.tabs.create({
+    var tab = await chrome.tabs.create({
         url: "https://www.youtube.com/feed/subscriptions",
         active: true,
     });
     console.log("Tab created:", tab);
 
+    // The content script can only be injected once the tab loading is done as we might otherwise inject the script into the empty tab document.
     await new Promise((resolve) => {
-        console.log("Waiting for tab created to complete...");
-        chrome.tabs.onUpdated.addListener(function handleTabsOnUpdated (tabId, changeInfo) {
+        console.log("Waiting for tab loading...");
+        chrome.tabs.onUpdated.addListener(function handleTabsOnUpdated(tabId, changeInfo) {
             if (tabId !== tab.id) {
                 return; // Not the tab we are interested in.
             }
             console.log("Tab status update:", changeInfo);
-            if (changeInfo.status === 'complete') {
+            if (changeInfo.status !== 'loading') {
                 chrome.tabs.onUpdated.removeListener(handleTabsOnUpdated);
-                console.log("Tab creation completed.");
+                console.log("Tab loaded.");
                 resolve();
             }
         });
     });
 
     // Inject content script.
-    let results = await chrome.scripting.executeScript({
-        files: ["js/content.js"],
+    // The content script injection needs to happen as early as possible so that the MutationObserver of the content script can catch the earliest video loads.
+    var results = await chrome.scripting.executeScript({
+        files: ["js/content_script.js"],
         injectImmediately: true,
         target: {
             tabId: tab.id,

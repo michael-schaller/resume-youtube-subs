@@ -7,6 +7,7 @@
 
 * Add `RELEASE.md` that explains step by step how to do a new release. This should include:
   * Update extension version in the manifest.
+  * Testing the extension multiple times in grid view and list view.
 
 * Publish the extension in the Chrome Web Store:
   https://developer.chrome.com/docs/webstore/publish/
