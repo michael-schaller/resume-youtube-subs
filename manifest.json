@@ -27,15 +27,10 @@
         "type": "module"
     },
 
-    // The permissions are explained in README.md.
     "permissions": [
         "scripting"
     ],
     "host_permissions": [
         "https://www.youtube.com/feed/subscriptions"
     ]
-
-    // TODO:
-    // * Add key:
-    //   https://developer.chrome.com/docs/extensions/mv3/manifest/key/
 }

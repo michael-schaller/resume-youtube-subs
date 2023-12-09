@@ -12,6 +12,9 @@
 * Publish the extension in the Chrome Web Store:
   https://developer.chrome.com/docs/webstore/publish/
 
+* Add key to the manifest.json: https://developer.chrome.com/docs/extensions/mv3/manifest/key/
+
+
 * Update README.md and add a link to the extension in the Chrome Web Store.
 
 * Edit `About` on GitHub and enter the extension URL of the Chrome Web Store into the Website URL field.
