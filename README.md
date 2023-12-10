@@ -25,3 +25,7 @@ The injected JavaScript code uses a [MutationObserver](https://developer.mozilla
 ### `host_permissions`
 
 * `https://www.youtube.com/feed/subscriptions`: Needed to inject JavaScript code into the YouTube subscriptions page to fing the newest watched video. This injection only happens for the YouTube subscriptions tab opened by the extension.
+
+## Release instructions
+
+The release instructions can be found [here](https://github.com/michael-schaller/resume-youtube-subs/wiki#release-instructions).

@@ -10,7 +10,7 @@ The icon has been created with [Google Drawings](https://docs.google.com/drawing
 
 ## SVG to PNG conversion
 
-To convert `icon.svg` to the various `icon-*.png` files you need [Inkscape](https://inkscape.org) installed. 
+To convert `icon.svg` to the various `icon-*.png` files you need [Inkscape](https://inkscape.org) installed.
 
 Under [Ubuntu](https://ubuntu.com)/[Debian](https://www.debian.org)/[Mint](https://linuxmint.com) Linux you can install it by running:
 
@@ -18,7 +18,7 @@ Under [Ubuntu](https://ubuntu.com)/[Debian](https://www.debian.org)/[Mint](https
 sudo apt install inkscape
 ```
 
-The various PNG files can then be created from `icon.svg` under Linux by running:
+The various PNG files can then be created from `icon.svg` in the Bash shell under Linux by running:
 
 ```shell
 for width in 16 32 48 128; do inkscape --export-type=png --export-width=$width --export-background-opacity=0 --export-filename=icon-$width.png icon.svg; done
