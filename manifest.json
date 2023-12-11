@@ -4,7 +4,7 @@
     "short_name": "res-yt-subs",
     "description": "On click of the extension icon your YouTube subscriptions will be opened and scrolled to the newest watched video.",
     "homepage_url": "https://github.com/michael-schaller/resume-youtube-subs",
-    "version": "1.0.0",
+    "version": "1.0.1",
 
     "action": {
         "default_icon": {
@@ -32,7 +32,5 @@
     ],
     "host_permissions": [
         "https://www.youtube.com/feed/subscriptions"
-    ],
-
-    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm1Nf3u/wWdSz7JSgV/EgdJ8u9FcJpsDbTvMhQcrXrJRu4HyoyF48NWjPWiFIpUJiPioIMxHUE3V2X8OlPhdyg8dEohLsLfPgazNf5AxhkpVLyCNhNnrkQY897uqm8xm9IUnFQaHjs2axFLHPGAadudH07QA0st5nXvCuJHSlrOeQsLuf3liIWlWndNIiPbGs9gdk5Mqiocz4HXDgOH/xvEnSvG1PNaWiN7zcO1TN1w6mHGYJu/Q9iocD3gq8uJ7DIvTcQmjEpxFcakrD7MNzbvobB0K1dqN6+7Oc8ZkluvQoe4jKGdADUJOxVFozzpojR6m2JrMSyiOQZ0Puw1q1HwIDAQAB"
+    ]
 }
