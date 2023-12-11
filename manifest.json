@@ -2,9 +2,9 @@
     "manifest_version": 3,
     "name": "Resume YouTube Subs",
     "short_name": "res-yt-subs",
-    "description": "On click of the extension icon your YouTube subscriptions will be opened and scrolled to the newest watched video.",
+    "description": "Resume your YouTube subscriptions with a single click.",
     "homepage_url": "https://github.com/michael-schaller/resume-youtube-subs",
-    "version": "1.0.3",
+    "version": "1.0.4",
 
     "action": {
         "default_icon": {
