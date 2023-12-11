@@ -4,7 +4,11 @@ A Chrome extension that opens your YouTube subscriptions in a new tab and scroll
 
 ## Chrome Web Store
 
-The extension isn't published in the Chrome Web Store, yet.
+The extension can be found [here](https://chromewebstore.google.com/detail/resume-youtube-subs/fejikpidmpidoficeahddbejjkanfbde).
+
+## Get support
+
+If you encountered an issue, have a feature request or just a question just [file a new issue report](https://github.com/michael-schaller/resume-youtube-subs/issues/new/choose).
 
 ## License
 
