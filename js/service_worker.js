@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 
-chrome.management.getSelf(function (extInfo) {
-    if (extInfo.installType === "development") {
-        console.log("Unpacked development extension.");
-        chrome.action.setBadgeText({text: "Dev"});
-    }
-});
+chrome.action.onClicked.addListener(handleRuntimeOnClicked);
 
-chrome.action.onClicked.addListener(async function () {
+chrome.runtime.onStartup.addListener(checkUnpackedExtension);
+checkUnpackedExtension();
+
+
+async function handleRuntimeOnClicked() {
     console.log("Extension icon clicked.");
 
     // Create YouTube subscriptions tab and wait for tab completion.
@@ -54,4 +53,14 @@ chrome.action.onClicked.addListener(async function () {
         return;
     }
     console.log("Content script injection result:", results[0]);
-});
+}
+
+
+function checkUnpackedExtension() {
+    chrome.management.getSelf(function (extInfo) {
+        if (extInfo.installType === "development") {
+            console.log("Unpacked development extension.");
+            chrome.action.setBadgeText({text: "Dev"});
+        }
+    });
+}
