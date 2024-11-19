@@ -11,8 +11,9 @@ var observer = new MutationObserver(onNodeMutations);
 observer.observe(target, config);
 console.log("Setup MutationObserver.")
 
-var foundFirstVideo = false;
 var foundWatchedVideo = false;
+var earlyVideoCount = 0;
+var lateVideoCount = 0;
 
 function onNodeMutations(mutations) {
     for (var i = 0; i < mutations.length; i++) {
@@ -35,18 +36,60 @@ function onNodeMutations(mutations) {
             }
 
             switch(addedNode.localName) {
-                // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to hande
+                // IMPORTANT: The various nodes of YouTube videos load with different priorities. For example the video thumbnail
+                // loads in early (high priority) and the progress bar in later (lower priority).
+                // Sadly this means that if this extension triggers the load of new videos (scrollToEndOfPage) too aggressively
+                // that the load of lower priority nodes can be starved and hence it can take a lot longer (or sometimes
+                // indefinitely) until the progress bar nodes are loaded in and a watched video is found. To avoid this we
+                // trigger the load of new videos only if enough videos have mostly loaded (earlyVideoCount isn't too far ahead
+                // of lateVideoCount).
+
+                // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
                 // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
 
-                // IMPORTANT: Make sure that these nodes are detected in list and grid view of the YouTube subscriptions page.
+                // Parent video node that contains all the nodes of a single video in the subscriptions video list (high priority).
+                case "ytd-rich-grid-media": // Grid view; Introduced 2024-10-01
+                case "ytd-shelf-renderer": // List view; Introduced 2024-10-01
+                    earlyVideoCount++;
+                    if (earlyVideoCount == 1) {
+                        console.log("Found first video (early).");
+                    }
+                    if (earlyVideoCount % 10 == 0) {
+                        console.log("Video count (early): ", earlyVideoCount);
+                    }
+                    if (!foundWatchedVideo) {
+                        // Trigger load of new videos, unless there are too many videos still loading.
+                        if (earlyVideoCount - lateVideoCount <= 50) {
+                            scrollToEndOfPage();
+                        }
+                    }
+                    break;
 
-                // Progress bar of a watched video.
+                // Video overlay area (contains for example the video length; low priority).
+                // IMPORTANT: We need a video node that is present for all videos so that early/lateVideoCount are in sync.
+                // Ideally this video node loads with a similar (or slightly later) priority than the progress bar node.
+                case "ytd-thumbnail-overlay-now-playing-renderer": // Introduced 2024-10-01
+                    lateVideoCount++;
+                    if (lateVideoCount == 1) {
+                        console.log("Found first video (late).");
+                    }
+                    if (lateVideoCount % 10 == 0) {
+                        console.log("Video count (late): ", lateVideoCount);
+                    }
+                    if (!foundWatchedVideo) {
+                        // Trigger load of new videos if most of the videos have loaded.
+                        if (earlyVideoCount - lateVideoCount <= 10) {
+                            scrollToEndOfPage();
+                        }
+                    }
+                    break;
+
+                // Progress bar of a watched video (low priority).
                 case "ytd-thumbnail-overlay-resume-playback-renderer": // Introduced 2023-12-09 (with extension launch)
-                    // We found a watched video but the mutations can be out of order and hence we don't know which watched video is the newest.
-                    // scrollToWatchedVideo ensures that we end up with the newest watched video by only allowing to scroll up.
                     if(!foundWatchedVideo) {
+                        // We found a watched video and hence we no longer need to process any other video nodes.
                         foundWatchedVideo = true;
-                        console.log("Found a watched video.");
+                        console.log("Found first watched video.");
 
                         // Schedule disconnect of MutationObserver and only process the remaining mutations.
                         // The delay is needed as not all progress bars of watched videos might be loaded yet
@@ -56,26 +99,19 @@ function onNodeMutations(mutations) {
                             observer.disconnect();
                             console.log("Disconnected MutationObserver.");
                         };
-                        setTimeout(scheduleDisconnect, 5000); // Wait five seconds for delayed progress bars to load.
+                        setTimeout(scheduleDisconnect, 10000); // Wait ten seconds for delayed progress bars to load.
                     }
-                    scrollToWatchedVideo(addedNode);
-                    break;
 
-                // Video row (grid view) or video (list view) in the subscriptions video list.
-                case "ytd-rich-grid-row": // Grid view; Introduced 2023-12-09 (with extension launch)
-                case "ytd-item-section-renderer": // List view; Introduced 2023-12-09 (with extension launch)
-                    if(!foundFirstVideo) {
-                        foundFirstVideo = true;
-                        console.log("Found first video.");
-                    }
-                    if (!foundWatchedVideo) {
-                        scrollToEndOfPage(); // Scroll down to the very end of the page to trigger the load of further videos.
-                    }
+                    // We found a watched video but the mutations can be out of order and hence we don't know which watched video is the newest.
+                    // scrollToWatchedVideo ensures that we end up with the newest watched video by only allowing to scroll up.
+                    scrollToWatchedVideo(addedNode);
                     break;
             }
         }
     }
 }
+
+var firstWatchedVideoScroll = false;
 
 async function scrollToWatchedVideo(node) {
     // Some nodes don't have the offsetTop property and in this case we first find a parent element that has it.
@@ -88,6 +124,13 @@ async function scrollToWatchedVideo(node) {
 	parent.scrollIntoView({block: "end", inline: "start", behavior: "instant"});
     var offset = 100; // Scroll a bit more to show the rest of the video tile. Particularly important for grid view.
     window.scrollBy({left: 0, top: offset, behavior: "instant"});
+
+    // Keep the scroll position as is for the first call of scrollToWatchedVideo.
+    // After that the following code only allows to scroll up to ensure that the newest watched video is scrolled to.
+    if (!firstWatchedVideoScroll) {
+        firstWatchedVideoScroll = true;
+        return;
+    }
 
     // Undo scroll if we scrolled down.
     // The mutations sent by the MutationObserver can be out of order.

@@ -18,7 +18,7 @@ The extension code is licensed under the [GPL v3](LICENSE) license. The extensio
 
 On click of the extension icon a new tab for the YouTube subscriptions is opened and JavaScript code is injected as  early as possible to find the newest watched video.
 
-The injected JavaScript code uses a [MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) to watch for newly added videos. As long as no watched video is found the code scrolls down to the end of the subscriptions page when a new video appears to trigger the load of further videos. If a watched video is found it is scrolled into view if it is newer (further up) than the previously found watched video. In the end this should always scroll to the newest watched video.
+The injected JavaScript code uses a [MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) to watch for newly added videos. As long as no watched video is found the code scrolls down to the end of the subscriptions page to trigger the load of further videos. If a watched video is found it is scrolled into view if it is newer (further up) than the previously found watched video. In the end this should always scroll to the newest watched video.
 
 ## Extension permissions
 
