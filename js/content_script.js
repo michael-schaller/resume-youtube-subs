@@ -40,9 +40,10 @@ function onNodeMutations(mutations) {
                 // loads in early (high priority) and the progress bar in later (lower priority).
                 // Sadly this means that if this extension triggers the load of new videos (scrollToEndOfPage) too aggressively
                 // that the load of lower priority nodes can be starved and hence it can take a lot longer (or sometimes
-                // indefinitely) until the progress bar nodes are loaded in and a watched video is found. To avoid this we
-                // trigger the load of new videos only if enough videos have mostly loaded (earlyVideoCount isn't too far ahead
-                // of lateVideoCount).
+                // indefinitely) until the progress bar nodes are loaded and a watched video is found. To avoid this we trigger
+                // the load of new videos only if enough videos have mostly loaded (earlyVideoCount isn't too far ahead of
+                // lateVideoCount). Furthermore scrollToEndOfPage is throttled via throttledScrollToEndOfPage so the trigger to
+                // load new videos happens less frequently and hence less aggressively.
 
                 // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
                 // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
@@ -60,7 +61,7 @@ function onNodeMutations(mutations) {
                     if (!foundWatchedVideo) {
                         // Trigger load of new videos, unless there are too many videos still loading.
                         if (earlyVideoCount - lateVideoCount <= 50) {
-                            scrollToEndOfPage();
+                            throttledScrollToEndOfPage();
                         }
                     }
                     break;
@@ -79,7 +80,7 @@ function onNodeMutations(mutations) {
                     if (!foundWatchedVideo) {
                         // Trigger load of new videos if most of the videos have loaded.
                         if (earlyVideoCount - lateVideoCount <= 10) {
-                            scrollToEndOfPage();
+                            throttledScrollToEndOfPage();
                         }
                     }
                     break;
@@ -141,6 +142,26 @@ async function scrollToWatchedVideo(node) {
     }
 }
 
+var throttleTimeout;
+
+function throttledScrollToEndOfPage() {
+    if (!throttleTimeout) {
+        // Schedule call of scrollToEndOfPage.
+        var delayedScrollToEndOfPage = function() {
+            throttleTimeout = undefined;
+            scrollToEndOfPage();
+        };
+        delay = 1000;
+        throttleTimeout = setTimeout(delayedScrollToEndOfPage, delay);
+    }
+
+    // Do nothing as a call of scrollToEndOfPage is already scheduled.
+}
+
 function scrollToEndOfPage() {
+    if (foundWatchedVideo) {
+        // No further new videos needed. This was likely a delayed call because of throttledScrollToEndOfPage.
+        return;
+    }
     window.scrollTo({left: 0, top: document.scrollingElement.scrollHeight, behavior: "instant"});
 }
