@@ -12,7 +12,7 @@ If you encountered an issue, have a feature request or just a question just [fil
 
 ## License
 
-The extension code is licensed under the [GPL v3](LICENSE) license. The extension icon is licensed under the [CC BY-NC-SA 4.0](icon/LICENSE) license.
+The extension code is licensed under the [GPL v3](LICENSE) license. The extension icon and loading animation image are licensed under the [CC BY-NC-SA 4.0](icon/LICENSE) license.
 
 ## How the extension works
 

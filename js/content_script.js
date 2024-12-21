@@ -63,6 +63,8 @@ function onNodeMutations(mutations) {
                         if (earlyVideoCount - lateVideoCount <= 50) {
                             throttledScrollToEndOfPage();
                         }
+
+                        updateAnimation();
                     }
                     break;
 
@@ -82,6 +84,8 @@ function onNodeMutations(mutations) {
                         if (earlyVideoCount - lateVideoCount <= 10) {
                             throttledScrollToEndOfPage();
                         }
+
+                        updateAnimation();
                     }
                     break;
 
@@ -101,6 +105,8 @@ function onNodeMutations(mutations) {
                             console.log("Disconnected MutationObserver.");
                         };
                         setTimeout(scheduleDisconnect, 10000); // Wait ten seconds for delayed progress bars to load.
+
+                        removeAnimation();
                     }
 
                     // We found a watched video but the mutations can be out of order and hence we don't know which watched video is the newest.
@@ -147,7 +153,7 @@ var throttleTimeout;
 function throttledScrollToEndOfPage() {
     if (!throttleTimeout) {
         // Schedule call of scrollToEndOfPage.
-        var delayedScrollToEndOfPage = function() {
+        let delayedScrollToEndOfPage = function() {
             throttleTimeout = undefined;
             scrollToEndOfPage();
         };
@@ -164,4 +170,44 @@ function scrollToEndOfPage() {
         return;
     }
     window.scrollTo({left: 0, top: document.scrollingElement.scrollHeight, behavior: "instant"});
+}
+
+var animationDiv;
+var animationImage;
+var animationImageRotation = 0;
+
+function updateAnimation() {
+    if (animationDiv === undefined) {
+        // Init animation.
+        let div = document.createElement("div");
+        animationDiv = div;
+        div.setAttribute("id", "resume-youtube-subs-animation");
+        div.style.cssText = "position: fixed; width: 192px; height: 192px; top: 64px; right: 64px; z-index: 100;";
+        document.body.insertBefore(div, document.body.firstChild);
+
+        let url1 = chrome.runtime.getURL("icon/icon-128.png");
+        let img1 = document.createElement("img");
+        img1.setAttribute("src", url1);
+        img1.style.cssText = "position: absolute; width: 128px; height: 128px; margin: auto; top: 0px; left: 0px; bottom: 0px; right: 0px;";
+        div.appendChild(img1);
+
+        let url2 = chrome.runtime.getURL("animation/loading.svg");
+        let img2 = document.createElement("img");
+        animationImage = img2;
+        img2.setAttribute("src", url2);
+        img2.style.cssText = "position: absolute; width: 192px; height: 192px; margin: auto; top: 0px; left: 0px; bottom: 0px; right: 0px;";
+        img2.style.transform = "rotate(" + animationImageRotation + "deg)";
+        div.appendChild(img2);
+    } else {
+        // Update animation.
+        animationImageRotation += 3;
+        if (animationImageRotation >= 360) {
+            animationImageRotation -= 360;
+        }
+        animationImage.style.transform = "rotate(" + animationImageRotation + "deg)";
+    }
+}
+
+function removeAnimation() {
+    document.body.removeChild(animationDiv);
 }

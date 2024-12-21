@@ -15,6 +15,7 @@
         },
         "default_title": "Click me to resume your YouTube subscriptions."
     },
+
     "icons": {
         "16": "icon/icon-16.png",
         "32": "icon/icon-32.png",
@@ -30,7 +31,21 @@
     "permissions": [
         "scripting"
     ],
+
     "host_permissions": [
         "https://www.youtube.com/feed/subscriptions"
+    ],
+
+    "web_accessible_resources": [
+        {
+            "resources": ["icon/icon-128.png"],
+            "matches": ["https://www.youtube.com/*"],
+            "use_dynamic_url": true
+        },
+        {
+            "resources": ["animation/loading.svg"],
+            "matches": ["https://www.youtube.com/*"],
+            "use_dynamic_url": true
+        }
     ]
 }
