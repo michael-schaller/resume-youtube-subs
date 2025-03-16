@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 
+// Log Resume YouTube Subs extension version.
+var manifest = chrome.runtime.getManifest();
+if (!manifest) {
+    console.error("Chrome runtime did not provide an extension manifest.");
+} else {
+    if (!("version" in manifest)) {
+        console.error("The extension manifest did not provide a version.");
+    } else {
+        console.info("Resume YouTube Subs extension version: ", manifest.version);
+    }
+}
+
 // Watch for mutations on the YouTube subscriptions page that is currently loading.
-// To avoid brittleness caused by changes on the YouTube side we rely on all nodes under document node and not some deeper YouTube-specific node.
+// To avoid brittleness caused by changes on the YouTube side we watch all node changes under the document node and not some deeper YouTube-specific node.
 var target = document.documentElement;
 var config = {
 	subtree: true,
@@ -14,44 +26,46 @@ console.log("Setup MutationObserver.")
 var foundWatchedVideo = false;
 var earlyVideoCount = 0;
 var lateVideoCount = 0;
+var lastVideoCountChange;
 
 function onNodeMutations(mutations) {
     for (var i = 0; i < mutations.length; i++) {
         var mutation = mutations[i];
         if (!("addedNodes" in mutation)) {
-            // Theoretically we could have a mutation that only has removed nodes.
-            continue;
+            continue; // No added nodes -> Nothing to do.
         }
         for (var j = 0; j < mutation.addedNodes.length; j++) {
             var addedNode = mutation.addedNodes[j];
 
-            if (!("localName" in addedNode)) {
-                continue;  // Skip all added nodes that don't have a local name.
-            }
-
             // IMPORTANT: Everything below here depends on YouTube and can break if there are changes on the YouTube side.
 
+            // Check node prerequisites.
+            if (!("localName" in addedNode)) {
+                continue;
+            }
             if (!addedNode.localName.startsWith("ytd-")) {
-                continue; // Skip non-YouTube nodes.
+                continue; // Not a YouTube node.
+            }
+            if (!("classList" in addedNode)) {
+                continue;
             }
 
-            switch(addedNode.localName) {
-                // IMPORTANT: The various nodes of YouTube videos load with different priorities. For example the video thumbnail
-                // loads in early (high priority) and the progress bar in later (lower priority).
-                // Sadly this means that if this extension triggers the load of new videos (scrollToEndOfPage) too aggressively
-                // that the load of lower priority nodes can be starved and hence it can take a lot longer (or sometimes
-                // indefinitely) until the progress bar nodes are loaded and a watched video is found. To avoid this we trigger
-                // the load of new videos only if enough videos have mostly loaded (earlyVideoCount isn't too far ahead of
-                // lateVideoCount). Furthermore scrollToEndOfPage is throttled via throttledScrollToEndOfPage so the trigger to
-                // load new videos happens less frequently and hence less aggressively.
+            // IMPORTANT: The various nodes of YouTube videos load with different priorities. For example the video thumbnail
+            // loads in early (high priority) and the progress bar in later (lower priority).
+            // Sadly this means that if this extension triggers the load of new videos (scrollToEndOfPage) too aggressively
+            // that the load of lower priority nodes can be starved and hence it can take a lot longer (or sometimes
+            // indefinitely) until the progress bar nodes are loaded and a watched video is found. To avoid this we trigger
+            // the load of new videos only if enough videos have mostly loaded (rubber band to ensure that earlyVideoCount
+            // isn't too far ahead of lateVideoCount).
+            // Furthermore scrollToEndOfPage is throttled via throttledScrollToEndOfPage so the trigger to load new videos
+            // happens less frequently and hence less aggressively.
+            const rubberBandMin = 10;
+            const rubberBandMax = 50;
 
-                // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
-                // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
-
-                // Parent video node that contains all the nodes of a single video in the subscriptions video list (high priority).
-                case "ytd-rich-grid-media": // Grid view; Introduced 2024-10-01
-                case "ytd-shelf-renderer": // List view; Introduced 2024-10-01
+            switch(true) {
+                case isEarlyVideoNode(addedNode):
                     earlyVideoCount++;
+                    lastVideoCountChange = Date.now();
                     if (earlyVideoCount == 1) {
                         console.log("Found first video (early).");
                     }
@@ -60,7 +74,7 @@ function onNodeMutations(mutations) {
                     }
                     if (!foundWatchedVideo) {
                         // Trigger load of new videos, unless there are too many videos still loading.
-                        if (earlyVideoCount - lateVideoCount <= 50) {
+                        if (earlyVideoCount - lateVideoCount <= rubberBandMax) {
                             throttledScrollToEndOfPage();
                         }
 
@@ -68,11 +82,9 @@ function onNodeMutations(mutations) {
                     }
                     break;
 
-                // Video overlay area (contains for example the video length; low priority).
-                // IMPORTANT: We need a video node that is present for all videos so that early/lateVideoCount are in sync.
-                // Ideally this video node loads with a similar (or slightly later) priority than the progress bar node.
-                case "ytd-thumbnail-overlay-now-playing-renderer": // Introduced 2024-10-01
+                case isLateVideoNode(addedNode):
                     lateVideoCount++;
+                    lastVideoCountChange = Date.now();
                     if (lateVideoCount == 1) {
                         console.log("Found first video (late).");
                     }
@@ -81,7 +93,7 @@ function onNodeMutations(mutations) {
                     }
                     if (!foundWatchedVideo) {
                         // Trigger load of new videos if most of the videos have loaded.
-                        if (earlyVideoCount - lateVideoCount <= 10) {
+                        if (earlyVideoCount - lateVideoCount <= rubberBandMin) {
                             throttledScrollToEndOfPage();
                         }
 
@@ -89,8 +101,7 @@ function onNodeMutations(mutations) {
                     }
                     break;
 
-                // Progress bar of a watched video (low priority).
-                case "ytd-thumbnail-overlay-resume-playback-renderer": // Introduced 2023-12-09 (with extension launch)
+                case isWatchedVideoNode(addedNode):
                     if(!foundWatchedVideo) {
                         // We found a watched video and hence we no longer need to process any other video nodes.
                         foundWatchedVideo = true;
@@ -100,11 +111,8 @@ function onNodeMutations(mutations) {
                         // The delay is needed as not all progress bars of watched videos might be loaded yet
                         // and the progress bar of the newest watched video might be delayed.
                         // Once all mutations are handled the extension's job is done.
-                        var scheduleDisconnect = function() {
-                            observer.disconnect();
-                            console.log("Disconnected MutationObserver.");
-                        };
-                        setTimeout(scheduleDisconnect, 10000); // Wait ten seconds for delayed progress bars to load.
+                        console.log("Scheduling disconnect of MutationObserver. Current early/late video count: ", earlyVideoCount, "/", lateVideoCount);
+                        setTimeout(disconnectMutationObserver, 15000);
 
                         removeAnimation();
                     }
@@ -117,6 +125,84 @@ function onNodeMutations(mutations) {
         }
     }
 }
+
+function expectedNode(node, localName, className) {
+    if (node.localName !== localName) {
+        return false;
+    }
+    return node.classList.contains(className);
+}
+
+function isEarlyVideoNode(node) {
+    // An early video node is the parent video node that contains all the nodes of a single video in the subscriptions
+    // video list (high priority). The early video node is different for the list vs. grid view.
+
+    // IMPORTANT: We need the same number of early/late video nodes so that early/lateVideoCount are in sync.
+
+    // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
+    // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
+    const listName = "ytd-shelf-renderer"; // Introduced 2024-10-01.
+    const listClass = "ytd-item-section-renderer";
+    const gridName = "ytd-rich-grid-media"; // Introduced 2024-10-01.
+    const gridClass = "ytd-rich-item-renderer";
+
+    if (node.localName !== listName && node.localName !== gridName) {
+        return false;
+    }
+    return node.classList.contains(listClass) || node.classList.contains(gridClass);
+}
+
+function isLateVideoNode(node) {
+    // A late video node is the node that represents the video length (low priority).
+    // This video node needs to load with a similar (or slightly later) priority than the progress bar node of a watched video.
+
+    // IMPORTANT: We need the same number of early/late video nodes so that early/lateVideoCount are in sync.
+
+    // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
+    // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
+    const localName = "ytd-thumbnail-overlay-now-playing-renderer"; // Introduced 2025-10-01.
+    const className =  "ytd-thumbnail";
+
+    if (node.localName !== localName) {
+        return false;
+    }
+    return node.classList.contains(className);
+}
+
+function isWatchedVideoNode(node) {
+    // A watched video node is a progress bar node that represents the how much of the respective video has been already watched.
+    // The watched video node must only be present for (partially or fully) watched videos.
+
+    // IMPORTANT: YouTube does gradual rollouts of changes. So always note the date when we are starting to handle
+    // a new node and only remove old nodes once you are absolutely sure that they aren't in use by YouTube anymore.
+    const localName = "ytd-thumbnail-overlay-resume-playback-renderer"; // Introduced 2023-12-09 (with extension launch).
+    const className =  "ytd-thumbnail";
+
+    if (node.localName !== localName) {
+        return false;
+    }
+    return node.classList.contains(className);
+}
+
+function disconnectMutationObserver() {
+    var diff = (Date.now() - lastVideoCountChange);
+    if (diff < 15000) {
+        console.log("Re-scheduling disconnect of MutationObserver. Current early/late video count: ", earlyVideoCount, "/", lateVideoCount);
+        setTimeout(disconnectMutationObserver, 15000);
+        return;
+    }
+
+    observer.disconnect();
+    console.log("Disconnected MutationObserver.");
+
+    if (earlyVideoCount != lateVideoCount) {
+        // This indicates that one of the matched div elements occurs more frequently than the
+        // other for some reason and hence the rubber banding likely isn't working as expected.
+        // Recomendation: Double check in the Chrome DevTools the element counts.
+        console.warn("Early/late video count mismatch (potential rubber banding problem): ", earlyVideoCount, "/", lateVideoCount);
+    }
+};
+
 
 var firstWatchedVideoScroll = false;
 
