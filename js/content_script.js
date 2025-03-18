@@ -207,16 +207,23 @@ function disconnectMutationObserver() {
 var firstWatchedVideoScroll = false;
 
 async function scrollToWatchedVideo(node) {
-    // Some nodes don't have the offsetTop property and in this case we first find a parent element that has it.
-    var parent = node;
-	while (parent.offsetTop === 0) {
-		parent = parent.parentNode;
-	}
+    // Find the scroll target, which is the early video node above the given node.
+    // Note: The early video node is the video node that contains all the nodes of a single video.
+    var target = node;
+    while (!isEarlyVideoNode(target)) {
+        target = target.parentNode;
+        if (target === null) {
+            console.error("Couldn't find early video node parent for given node:", node);
+            target = node;  // Fall back to the given node as scroll target.
+            break;
+        }
+    }
+
+    // Highlight the scroll target.
+    target.style.backgroundColor = "rgba(255, 223, 0, 0.2)";
 
     var oldPos = document.documentElement.scrollTop;
-	parent.scrollIntoView({block: "end", inline: "start", behavior: "instant"});
-    var offset = 100; // Scroll a bit more to show the rest of the video tile. Particularly important for grid view.
-    window.scrollBy({left: 0, top: offset, behavior: "instant"});
+	target.scrollIntoView({block: "end", inline: "start", behavior: "instant"});
 
     // Keep the scroll position as is for the first call of scrollToWatchedVideo.
     // After that the following code only allows to scroll up to ensure that the newest watched video is scrolled to.
