@@ -109,7 +109,7 @@ function onNodeMutations(mutations) {
 
                         // Schedule disconnect of MutationObserver and only process the remaining mutations.
                         // The delay is needed as not all progress bars of watched videos might be loaded yet
-                        // and the progress bar of the newest watched video might be delayed.
+                        // and the progress bar of the first watched video might be delayed.
                         // Once all mutations are handled the extension's job is done.
                         console.log("Scheduling disconnect of MutationObserver. Current early/late video count: ", earlyVideoCount, "/", lateVideoCount);
                         setTimeout(disconnectMutationObserver, 15000);
@@ -117,8 +117,9 @@ function onNodeMutations(mutations) {
                         removeAnimation();
                     }
 
-                    // We found a watched video but the mutations can be out of order and hence we don't know which watched video is the newest.
-                    // scrollToWatchedVideo ensures that we end up with the newest watched video by only allowing to scroll up.
+                    // We found a watched video but the mutations can be out of order and hence we don't know which
+                    // watched video is the first. scrollToWatchedVideo ensures that we end up with the first watched
+                    // video by only allowing to scroll up.
                     scrollToWatchedVideo(addedNode);
                     break;
             }
@@ -226,7 +227,7 @@ async function scrollToWatchedVideo(node) {
 	target.scrollIntoView({block: "end", inline: "start", behavior: "instant"});
 
     // Keep the scroll position as is for the first call of scrollToWatchedVideo.
-    // After that the following code only allows to scroll up to ensure that the newest watched video is scrolled to.
+    // After that the following code only allows to scroll up to ensure that we scroll to the first watched video.
     if (!firstWatchedVideoScroll) {
         firstWatchedVideoScroll = true;
         return;
@@ -234,7 +235,7 @@ async function scrollToWatchedVideo(node) {
 
     // Undo scroll if we scrolled down.
     // The mutations sent by the MutationObserver can be out of order.
-    // By not allowing to scroll down anymore we should end up with the newest watched video.
+    // By not allowing to scroll down anymore we should end up with the first watched video.
     var newPos = document.documentElement.scrollTop;
     if (newPos > oldPos) {
         window.scrollTo({left: 0, top: oldPos, behavior: "instant"});

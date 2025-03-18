@@ -4,7 +4,7 @@
     "short_name": "res-yt-subs",
     "description": "Resume your YouTube subscriptions with a single click.",
     "homepage_url": "https://github.com/michael-schaller/resume-youtube-subs",
-    "version": "1.0.4",
+    "version": "2.0.0",
 
     "action": {
         "default_icon": {
